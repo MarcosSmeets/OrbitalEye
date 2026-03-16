@@ -11,6 +11,8 @@ public class Orbit
     public double MeanAnomaly { get; private set; }
     public double MeanMotion { get; private set; }
     public DateTime Epoch { get; private set; }
+    public string? TleLine1 { get; private set; }
+    public string? TleLine2 { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
     private Orbit() { }
@@ -60,9 +62,11 @@ public class Orbit
         double argumentOfPerigee,
         double meanAnomaly,
         double meanMotion,
-        DateTime epoch)
+        DateTime epoch,
+        string? tleLine1 = null,
+        string? tleLine2 = null)
     {
-        return Create(
+        var orbit = Create(
             satelliteId,
             inclination,
             eccentricity,
@@ -71,5 +75,10 @@ public class Orbit
             meanAnomaly,
             meanMotion,
             epoch);
+
+        orbit.TleLine1 = tleLine1;
+        orbit.TleLine2 = tleLine2;
+
+        return orbit;
     }
 }

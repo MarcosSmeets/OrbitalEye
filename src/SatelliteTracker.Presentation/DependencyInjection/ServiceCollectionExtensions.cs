@@ -1,4 +1,6 @@
+using System.Net;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SatelliteTracker.Application.Interfaces;
 using SatelliteTracker.Application.UseCases;
@@ -26,7 +28,7 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, string connectionString)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, string connectionString, IConfiguration configuration)
     {
         services.AddDbContext<SatelliteTrackerDbContext>(options =>
             options.UseNpgsql(connectionString));
@@ -40,12 +42,29 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<TelemetryBroadcaster>();
         services.AddSingleton<ITelemetryBroadcaster>(sp => sp.GetRequiredService<TelemetryBroadcaster>());
 
-        services.AddHttpClient<CelestrakClient>();
-        services.AddSingleton<ITleProvider>(sp =>
+        services.AddSingleton<IOrbitPropagator, Sgp4OrbitPropagator>();
+
+        // Space-Track as primary TLE provider when configured
+        var spaceTrackIdentity = configuration["SpaceTrack:Identity"];
+        if (!string.IsNullOrEmpty(spaceTrackIdentity))
         {
-            var factory = sp.GetRequiredService<IHttpClientFactory>();
-            return new CelestrakClient(factory.CreateClient(nameof(CelestrakClient)));
-        });
+            services.AddHttpClient<SpaceTrackClient>()
+                .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+                {
+                    CookieContainer = new CookieContainer(),
+                    UseCookies = true
+                });
+            services.AddSingleton<ITleProvider>(sp => sp.GetRequiredService<SpaceTrackClient>());
+        }
+        else
+        {
+            services.AddHttpClient<CelestrakClient>();
+            services.AddSingleton<ITleProvider>(sp =>
+            {
+                var factory = sp.GetRequiredService<IHttpClientFactory>();
+                return new CelestrakClient(factory.CreateClient(nameof(CelestrakClient)));
+            });
+        }
 
         return services;
     }

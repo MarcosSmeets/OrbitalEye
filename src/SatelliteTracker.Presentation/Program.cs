@@ -14,7 +14,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? "Host=localhost;Database=satellite_tracker;Username=postgres;Password=postgres";
 
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure(connectionString);
+builder.Services.AddInfrastructure(connectionString, builder.Configuration);
 
 builder.Services.AddCors(options =>
 {
@@ -28,6 +28,7 @@ builder.Services.AddHealthChecks();
 
 builder.Services.AddHostedService<TleUpdateJob>();
 builder.Services.AddHostedService<TelemetryCleanupJob>();
+builder.Services.AddHostedService<OrbitPropagationJob>();
 
 var app = builder.Build();
 

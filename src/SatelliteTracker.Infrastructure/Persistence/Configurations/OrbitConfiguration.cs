@@ -39,6 +39,14 @@ public class OrbitConfiguration : IEntityTypeConfiguration<Orbit>
         builder.Property(o => o.Epoch)
             .HasColumnName("epoch");
 
+        builder.Property(o => o.TleLine1)
+            .HasColumnName("tle_line1")
+            .HasMaxLength(70);
+
+        builder.Property(o => o.TleLine2)
+            .HasColumnName("tle_line2")
+            .HasMaxLength(70);
+
         builder.Property(o => o.CreatedAt)
             .HasColumnName("created_at");
 

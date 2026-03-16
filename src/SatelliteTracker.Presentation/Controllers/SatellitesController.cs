@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SatelliteTracker.Application.DTOs;
 using SatelliteTracker.Application.UseCases;
+using SatelliteTracker.Domain.Interfaces;
 
 namespace SatelliteTracker.Presentation.Controllers;
 
@@ -14,6 +15,9 @@ public class SatellitesController : ControllerBase
     private readonly UpdateSatelliteUseCase _updateSatellite;
     private readonly GetOrbitUseCase _getOrbit;
     private readonly GetTelemetryHistoryUseCase _getTelemetryHistory;
+    private readonly IOrbitRepository _orbitRepository;
+    private readonly IOrbitPropagator _orbitPropagator;
+    private readonly ISatelliteRepository _satelliteRepository;
 
     public SatellitesController(
         CreateSatelliteUseCase createSatellite,
@@ -21,7 +25,10 @@ public class SatellitesController : ControllerBase
         ListSatellitesUseCase listSatellites,
         UpdateSatelliteUseCase updateSatellite,
         GetOrbitUseCase getOrbit,
-        GetTelemetryHistoryUseCase getTelemetryHistory)
+        GetTelemetryHistoryUseCase getTelemetryHistory,
+        IOrbitRepository orbitRepository,
+        IOrbitPropagator orbitPropagator,
+        ISatelliteRepository satelliteRepository)
     {
         _createSatellite = createSatellite;
         _getSatellite = getSatellite;
@@ -29,6 +36,9 @@ public class SatellitesController : ControllerBase
         _updateSatellite = updateSatellite;
         _getOrbit = getOrbit;
         _getTelemetryHistory = getTelemetryHistory;
+        _orbitRepository = orbitRepository;
+        _orbitPropagator = orbitPropagator;
+        _satelliteRepository = satelliteRepository;
     }
 
     [HttpGet]
@@ -93,5 +103,75 @@ public class SatellitesController : ControllerBase
     {
         var telemetry = await _getTelemetryHistory.ExecuteAsync(id, from, to, limit, cancellationToken);
         return Ok(telemetry);
+    }
+
+    [HttpGet("{id:guid}/position")]
+    public async Task<ActionResult> GetPosition(Guid id, CancellationToken cancellationToken)
+    {
+        var orbit = await _orbitRepository.GetBySatelliteIdAsync(id, cancellationToken);
+        if (orbit is null)
+            return NotFound();
+
+        var tleLine1 = orbit.TleLine1;
+        var tleLine2 = orbit.TleLine2;
+
+        if (string.IsNullOrEmpty(tleLine1) || string.IsNullOrEmpty(tleLine2))
+            return NotFound("No TLE data available for this satellite.");
+
+        var now = DateTime.UtcNow;
+        var (lat, lon, alt, velocity) = _orbitPropagator.CalculatePositionFromTle(tleLine1, tleLine2, now);
+
+        return Ok(new
+        {
+            satelliteId = id,
+            latitude = lat,
+            longitude = lon,
+            altitude = alt,
+            velocity,
+            timestamp = now
+        });
+    }
+
+    [HttpGet("positions")]
+    public async Task<ActionResult> GetAllPositions(CancellationToken cancellationToken)
+    {
+        var satellites = await _satelliteRepository.GetAllAsync(cancellationToken);
+        var now = DateTime.UtcNow;
+        var positions = new List<object>();
+
+        foreach (var satellite in satellites)
+        {
+            var orbit = await _orbitRepository.GetBySatelliteIdAsync(satellite.Id, cancellationToken);
+            if (orbit is null) continue;
+
+            var tleLine1 = orbit.TleLine1;
+            var tleLine2 = orbit.TleLine2;
+
+            if (string.IsNullOrEmpty(tleLine1) || string.IsNullOrEmpty(tleLine2))
+                continue;
+
+            try
+            {
+                var (lat, lon, alt, velocity) = _orbitPropagator.CalculatePositionFromTle(tleLine1, tleLine2, now);
+
+                positions.Add(new
+                {
+                    satelliteId = satellite.Id,
+                    name = satellite.Name,
+                    noradId = satellite.NoradId,
+                    latitude = lat,
+                    longitude = lon,
+                    altitude = alt,
+                    velocity,
+                    timestamp = now
+                });
+            }
+            catch
+            {
+                // Skip satellites with propagation errors
+            }
+        }
+
+        return Ok(positions);
     }
 }

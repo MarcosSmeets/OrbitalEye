@@ -55,3 +55,14 @@ export interface TelemetryUpdate {
 }
 
 export type WebSocketMessage = PositionUpdate | TelemetryUpdate;
+
+export interface SatellitePosition {
+  satelliteId: string;
+  name: string;
+  noradId: number;
+  latitude: number;
+  longitude: number;
+  altitude: number;
+  velocity: number;
+  timestamp: string;
+}

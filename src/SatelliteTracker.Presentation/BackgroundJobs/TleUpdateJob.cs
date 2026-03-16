@@ -55,7 +55,9 @@ public class TleUpdateJob : BackgroundService
                 var lines = tleData.Split('\n', StringSplitOptions.RemoveEmptyEntries);
                 if (lines.Length < 2) continue;
 
-                var parsed = TleParser.Parse(lines[0].Trim(), lines[1].Trim());
+                var tleLine1 = lines[0].Trim();
+                var tleLine2 = lines[1].Trim();
+                var parsed = TleParser.Parse(tleLine1, tleLine2);
 
                 var orbit = SatelliteTracker.Domain.Entities.Orbit.FromTle(
                     satellite.Id,
@@ -65,7 +67,9 @@ public class TleUpdateJob : BackgroundService
                     parsed.ArgumentOfPerigee,
                     parsed.MeanAnomaly,
                     parsed.MeanMotion,
-                    parsed.Epoch);
+                    parsed.Epoch,
+                    tleLine1,
+                    tleLine2);
 
                 await orbitRepo.AddAsync(orbit, cancellationToken);
                 await unitOfWork.SaveChangesAsync(cancellationToken);

@@ -3,7 +3,7 @@ import { CesiumGlobe } from './components/CesiumViewer';
 import { TelemetryPanel } from './components/TelemetryPanel';
 import { SatelliteList } from './components/SatelliteList';
 import { useWebSocket } from './hooks/useWebSocket';
-import { fetchSatellites } from './api/satellites';
+import { fetchSatellites, fetchAllPositions } from './api/satellites';
 import type { SatelliteDto, TelemetryDto } from './types';
 import './App.css';
 
@@ -17,6 +17,24 @@ function App() {
 
   useEffect(() => {
     fetchSatellites().then(setSatellites).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    const loadPositions = () => {
+      fetchAllPositions()
+        .then((data) => {
+          const posMap: Record<string, { latitude: number; longitude: number; altitude: number }> = {};
+          data.forEach((p) => {
+            posMap[p.satelliteId] = { latitude: p.latitude, longitude: p.longitude, altitude: p.altitude };
+          });
+          setPositions(posMap);
+        })
+        .catch(console.error);
+    };
+
+    loadPositions();
+    const interval = setInterval(loadPositions, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {

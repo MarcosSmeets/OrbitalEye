@@ -40,7 +40,9 @@ public class UpdateOrbitFromTleUseCase
             argumentOfPerigee,
             meanAnomaly,
             meanMotion,
-            epoch);
+            epoch,
+            tleLine1,
+            tleLine2);
 
         await _orbitRepository.AddAsync(orbit, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
