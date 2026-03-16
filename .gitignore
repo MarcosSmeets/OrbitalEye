@@ -486,3 +486,10 @@ $RECYCLE.BIN/
 CLAUDE.md
 
 .claude
+
+# Environment files (contain secrets)
+.env
+.env.development
+.env.production
+.env.local
+!.env.example
