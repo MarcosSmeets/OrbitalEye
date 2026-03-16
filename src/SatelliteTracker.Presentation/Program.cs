@@ -10,11 +10,20 @@ var envFile = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "D
     ? ".env.development"
     : ".env";
 
-var envPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", envFile);
-if (File.Exists(envPath))
-    Env.Load(envPath);
-else if (File.Exists(envFile))
-    Env.Load(envFile);
+// Search for .env file in current dir and up to 3 parent directories
+var searchDir = Directory.GetCurrentDirectory();
+for (var i = 0; i < 4; i++)
+{
+    var candidate = Path.Combine(searchDir, envFile);
+    if (File.Exists(candidate))
+    {
+        Env.Load(candidate);
+        break;
+    }
+    var parent = Directory.GetParent(searchDir);
+    if (parent is null) break;
+    searchDir = parent.FullName;
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
