@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\SatelliteTracker.Application\SatelliteTracker.Application.csproj" />
+    <ProjectReference Include="..\SatelliteTracker.Infrastructure\SatelliteTracker.Infrastructure.csproj" />
+    <ProjectReference Include="..\SatelliteTracker.Domain\SatelliteTracker.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.5" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>
