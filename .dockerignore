@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+**/node_modules/
+**/.vs/
+**/.idea/
+**/.vscode/
+.git
+.env
+.env.development
+.env.production
+.env.local

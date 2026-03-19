@@ -1,5 +1,7 @@
 using DotNetEnv;
 using SatelliteTracker.Infrastructure.Messaging;
+using Microsoft.EntityFrameworkCore;
+using SatelliteTracker.Infrastructure.Persistence;
 using SatelliteTracker.Presentation.BackgroundJobs;
 using SatelliteTracker.Presentation.DependencyInjection;
 using SatelliteTracker.Presentation.Middleware;
@@ -68,6 +70,13 @@ builder.Services.AddHostedService<TelemetryCleanupJob>();
 builder.Services.AddHostedService<OrbitPropagationJob>();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<SatelliteTrackerDbContext>();
+    await dbContext.Database.MigrateAsync();
+    await DatabaseSeeder.SeedAsync(dbContext);
+}
 
 if (app.Environment.IsDevelopment())
 {
