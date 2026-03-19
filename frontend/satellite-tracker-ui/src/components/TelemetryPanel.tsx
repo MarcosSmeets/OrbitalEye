@@ -3,30 +3,31 @@ import type { SatelliteDto, TelemetryDto } from '../types';
 interface Props {
   satellite: SatelliteDto | null;
   telemetry: TelemetryDto | null;
-  isConnected: boolean;
 }
 
-export function TelemetryPanel({ satellite, telemetry, isConnected }: Props) {
+export function TelemetryPanel({ satellite, telemetry }: Props) {
   if (!satellite) {
     return (
       <div className="telemetry-panel">
-        <h3>Select a satellite</h3>
-        <p>Click on a satellite to view telemetry data</p>
+        <div className="panel-empty">
+          <h3>No satellite selected</h3>
+          <p>Click on a satellite to view telemetry data</p>
+        </div>
       </div>
     );
   }
+
+  const statusClass = satellite.status.toLowerCase() === 'active' ? 'active' : 'inactive';
 
   return (
     <div className="telemetry-panel">
       <div className="panel-header">
         <h3>{satellite.name}</h3>
-        <span className={`status ${satellite.status.toLowerCase()}`}>{satellite.status}</span>
-        <span className={`ws-status ${isConnected ? 'connected' : 'disconnected'}`}>
-          {isConnected ? 'LIVE' : 'OFFLINE'}
-        </span>
+        <span className={`status-badge ${statusClass}`}>{satellite.status}</span>
       </div>
 
       <div className="panel-info">
+        <h4>Info</h4>
         <div className="info-row"><span>NORAD ID</span><span>{satellite.noradId}</span></div>
         {satellite.operator && <div className="info-row"><span>Operator</span><span>{satellite.operator}</span></div>}
         {satellite.internationalDesignator && <div className="info-row"><span>Designator</span><span>{satellite.internationalDesignator}</span></div>}

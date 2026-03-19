@@ -132,6 +132,46 @@ public class SatellitesController : ControllerBase
         });
     }
 
+    [HttpGet("{id:guid}/orbit/path")]
+    public async Task<ActionResult> GetOrbitPath(Guid id, CancellationToken cancellationToken)
+    {
+        var orbit = await _orbitRepository.GetBySatelliteIdAsync(id, cancellationToken);
+        if (orbit is null)
+            return NotFound();
+
+        var tleLine1 = orbit.TleLine1;
+        var tleLine2 = orbit.TleLine2;
+
+        if (string.IsNullOrEmpty(tleLine1) || string.IsNullOrEmpty(tleLine2))
+            return NotFound("No TLE data available for this satellite.");
+
+        var periodMinutes = 24.0 * 60.0 / orbit.MeanMotion;
+        var now = DateTime.UtcNow;
+        var points = new List<object>();
+
+        for (int i = 0; i < 360; i++)
+        {
+            var time = now.AddMinutes(periodMinutes * i / 360.0);
+            try
+            {
+                var (lat, lon, alt, _) = _orbitPropagator.CalculatePositionFromTle(tleLine1, tleLine2, time);
+                points.Add(new
+                {
+                    latitude = lat,
+                    longitude = lon,
+                    altitude = alt,
+                    timestamp = time
+                });
+            }
+            catch
+            {
+                // Skip points with propagation errors
+            }
+        }
+
+        return Ok(points);
+    }
+
     [HttpGet("positions")]
     public async Task<ActionResult> GetAllPositions(CancellationToken cancellationToken)
     {

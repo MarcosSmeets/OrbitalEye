@@ -68,6 +68,7 @@ builder.Services.AddHealthChecks();
 builder.Services.AddHostedService<TleUpdateJob>();
 builder.Services.AddHostedService<TelemetryCleanupJob>();
 builder.Services.AddHostedService<OrbitPropagationJob>();
+builder.Services.AddHostedService<SatelliteDiscoveryJob>();
 
 var app = builder.Build();
 

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { CesiumGlobe } from './components/CesiumViewer';
+import { GlobeView } from './components/ThreeGlobe';
 import { TelemetryPanel } from './components/TelemetryPanel';
 import { SatelliteList } from './components/SatelliteList';
 import { useWebSocket } from './hooks/useWebSocket';
-import { fetchSatellites, fetchAllPositions } from './api/satellites';
-import type { SatelliteDto, TelemetryDto } from './types';
+import { fetchSatellites, fetchAllPositions, fetchOrbitPath } from './api/satellites';
+import type { SatelliteDto, TelemetryDto, OrbitPathPoint } from './types';
 import './App.css';
 
 function App() {
@@ -12,6 +12,7 @@ function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [positions, setPositions] = useState<Record<string, { latitude: number; longitude: number; altitude: number }>>({});
   const [latestTelemetry, setLatestTelemetry] = useState<Record<string, TelemetryDto>>({});
+  const [orbitPath, setOrbitPath] = useState<OrbitPathPoint[]>([]);
 
   const { lastMessage, isConnected } = useWebSocket('/ws/satellites');
 
@@ -38,6 +39,14 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!selectedId) {
+      setOrbitPath([]);
+      return;
+    }
+    fetchOrbitPath(selectedId).then(setOrbitPath).catch(() => setOrbitPath([]));
+  }, [selectedId]);
+
+  useEffect(() => {
     if (!lastMessage) return;
 
     if (lastMessage.event === 'satellite.position.update') {
@@ -54,16 +63,28 @@ function App() {
 
   return (
     <div className="app">
-      <SatelliteList satellites={satellites} selectedId={selectedId} onSelect={setSelectedId} />
-      <div className="main-view">
-        <CesiumGlobe
-          satellites={satellites}
-          positions={positions}
-          selectedSatelliteId={selectedId}
-          onSelectSatellite={setSelectedId}
-        />
+      <header className="app-header">
+        <div className="branding">
+          <span className="brand-name">OrbitalEye</span>
+          <span className="brand-tagline">Satellite Tracking</span>
+        </div>
+        <span className={`connection-indicator ${isConnected ? 'connected' : 'disconnected'}`}>
+          {isConnected ? 'Live' : 'Offline'}
+        </span>
+      </header>
+      <div className="app-body">
+        <SatelliteList satellites={satellites} selectedId={selectedId} onSelect={setSelectedId} />
+        <div className="main-view">
+          <GlobeView
+            satellites={satellites}
+            positions={positions}
+            selectedSatelliteId={selectedId}
+            onSelectSatellite={setSelectedId}
+            orbitPath={orbitPath}
+          />
+        </div>
+        <TelemetryPanel satellite={selectedSatellite} telemetry={selectedTelemetry} />
       </div>
-      <TelemetryPanel satellite={selectedSatellite} telemetry={selectedTelemetry} isConnected={isConnected} />
     </div>
   );
 }

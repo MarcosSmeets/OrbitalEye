@@ -28,7 +28,7 @@ public class CelestrakClient : ITleProvider
         return content.Trim();
     }
 
-    public async Task<IReadOnlyList<(int NoradId, string TleLine1, string TleLine2)>> GetActiveSatelliteTlesAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<(string Name, int NoradId, string TleLine1, string TleLine2)>> GetActiveSatelliteTlesAsync(CancellationToken cancellationToken = default)
     {
         var url = "https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=TLE";
 
@@ -36,12 +36,13 @@ public class CelestrakClient : ITleProvider
         response.EnsureSuccessStatusCode();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        var results = new List<(int NoradId, string TleLine1, string TleLine2)>();
+        var results = new List<(string Name, int NoradId, string TleLine1, string TleLine2)>();
 
         var lines = content.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         for (var i = 0; i + 2 < lines.Length; i += 3)
         {
+            var name = lines[i].Trim();
             var line1 = lines[i + 1];
             var line2 = lines[i + 2];
 
@@ -53,7 +54,7 @@ public class CelestrakClient : ITleProvider
 
             if (int.TryParse(line2.Substring(2, 5).Trim(), out var noradId))
             {
-                results.Add((noradId, line1, line2));
+                results.Add((name, noradId, line1, line2));
             }
         }
 

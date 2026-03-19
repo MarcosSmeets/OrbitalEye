@@ -82,7 +82,7 @@ public class SpaceTrackClient : ITleProvider
         }
     }
 
-    public async Task<IReadOnlyList<(int NoradId, string TleLine1, string TleLine2)>> GetActiveSatelliteTlesAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<(string Name, int NoradId, string TleLine1, string TleLine2)>> GetActiveSatelliteTlesAsync(CancellationToken cancellationToken = default)
     {
         await EnsureAuthenticatedAsync(cancellationToken);
 
@@ -101,13 +101,13 @@ public class SpaceTrackClient : ITleProvider
             _logger.LogWarning(ex, "Failed to fetch active satellite TLEs from Space-Track");
             if (ex.StatusCode == HttpStatusCode.Unauthorized)
                 _isAuthenticated = false;
-            return Array.Empty<(int, string, string)>();
+            return Array.Empty<(string, int, string, string)>();
         }
     }
 
-    private static IReadOnlyList<(int NoradId, string TleLine1, string TleLine2)> ParseTleList(string content)
+    private static IReadOnlyList<(string Name, int NoradId, string TleLine1, string TleLine2)> ParseTleList(string content)
     {
-        var results = new List<(int, string, string)>();
+        var results = new List<(string, int, string, string)>();
         var lines = content.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         for (var i = 0; i + 1 < lines.Length; i += 2)
@@ -119,7 +119,7 @@ public class SpaceTrackClient : ITleProvider
             {
                 if (int.TryParse(line1.Substring(2, 5).Trim(), out var noradId))
                 {
-                    results.Add((noradId, line1, line2));
+                    results.Add(($"SAT {noradId}", noradId, line1, line2));
                 }
             }
         }

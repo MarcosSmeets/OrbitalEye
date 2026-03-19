@@ -9,19 +9,22 @@ interface Props {
 export function SatelliteList({ satellites, selectedId, onSelect }: Props) {
   return (
     <div className="satellite-list">
-      <h3>Satellites ({satellites.length})</h3>
-      <ul>
-        {satellites.map((sat) => (
-          <li
-            key={sat.id}
-            className={sat.id === selectedId ? 'selected' : ''}
-            onClick={() => onSelect(sat.id)}
-          >
+      <div className="list-header">
+        <h2>Satellites ({satellites.length})</h2>
+      </div>
+      {satellites.map((sat) => (
+        <div
+          key={sat.id}
+          className={`satellite-list-item${sat.id === selectedId ? ' selected' : ''}`}
+          onClick={() => onSelect(sat.id)}
+        >
+          <span className={`status-dot ${sat.status.toLowerCase() === 'active' ? 'active' : 'inactive'}`} />
+          <div className="sat-info">
             <span className="sat-name">{sat.name}</span>
-            <span className={`sat-status ${sat.status.toLowerCase()}`}>{sat.status}</span>
-          </li>
-        ))}
-      </ul>
+            <span className="sat-norad">NORAD {sat.noradId}</span>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
