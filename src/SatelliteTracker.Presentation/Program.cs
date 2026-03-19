@@ -33,15 +33,34 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Build connection string from env vars, fallback to appsettings
-var dbHost = Environment.GetEnvironmentVariable("DATABASE_HOST") ?? "localhost";
-var dbPort = Environment.GetEnvironmentVariable("DATABASE_PORT") ?? "5432";
-var dbName = Environment.GetEnvironmentVariable("DATABASE_NAME") ?? "satellite_tracker";
-var dbUser = Environment.GetEnvironmentVariable("DATABASE_USER") ?? "postgres";
-var dbPassword = Environment.GetEnvironmentVariable("DATABASE_PASSWORD") ?? "postgres";
+// Build connection string: DATABASE_URL (Railway) > individual env vars > appsettings
+var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+string connectionString;
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword}";
+if (!string.IsNullOrEmpty(databaseUrl))
+{
+    var uri = new Uri(databaseUrl);
+    var userInfo = uri.UserInfo.Split(':');
+    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+}
+else
+{
+    var dbHost = Environment.GetEnvironmentVariable("DATABASE_HOST") ?? "localhost";
+    var dbPort = Environment.GetEnvironmentVariable("DATABASE_PORT") ?? "5432";
+    var dbName = Environment.GetEnvironmentVariable("DATABASE_NAME") ?? "satellite_tracker";
+    var dbUser = Environment.GetEnvironmentVariable("DATABASE_USER") ?? "postgres";
+    var dbPassword = Environment.GetEnvironmentVariable("DATABASE_PASSWORD") ?? "postgres";
+
+    connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword}";
+}
+
+// Respect PORT env var for Railway dynamic port assignment
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(port))
+{
+    builder.WebHost.UseUrls($"http://+:{port}");
+}
 
 // Override SpaceTrack config from env vars
 var spaceTrackIdentity = Environment.GetEnvironmentVariable("SPACETRACK_IDENTITY");
