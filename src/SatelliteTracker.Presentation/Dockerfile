@@ -22,7 +22,5 @@ WORKDIR /app
 COPY --from=build /app/publish .
 
 ENV ASPNETCORE_ENVIRONMENT=Production
-ENV ASPNETCORE_URLS=http://+:${PORT:-5000}
-EXPOSE ${PORT:-5000}
 
 ENTRYPOINT ["dotnet", "SatelliteTracker.Presentation.dll"]

@@ -1,4 +1,6 @@
 using DotNetEnv;
+using HealthChecks.NpgSql;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using SatelliteTracker.Infrastructure.Messaging;
 using Microsoft.EntityFrameworkCore;
 using SatelliteTracker.Infrastructure.Persistence;
@@ -28,6 +30,13 @@ for (var i = 0; i < 4; i++)
 }
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.ClearProviders();
+builder.Logging.AddJsonConsole(options =>
+{
+    options.TimestampFormat = "yyyy-MM-ddTHH:mm:ss.fffZ";
+    options.UseUtcTimestamp = true;
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -74,15 +83,28 @@ if (!string.IsNullOrEmpty(spaceTrackIdentity))
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(connectionString, builder.Configuration);
 
+var corsOrigins = Environment.GetEnvironmentVariable("CORS_ORIGINS");
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+        if (!string.IsNullOrEmpty(corsOrigins))
+        {
+            policy.WithOrigins(corsOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials();
+        }
+        else
+        {
+            policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+        }
     });
 });
 
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks()
+    .AddNpgSql(connectionString, name: "postgresql", tags: new[] { "db", "ready" });
 
 builder.Services.AddHostedService<TleUpdateJob>();
 builder.Services.AddHostedService<TelemetryCleanupJob>();
@@ -98,16 +120,21 @@ using (var scope = app.Services.CreateScope())
     await DatabaseSeeder.SeedAsync(dbContext);
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseWebSockets();
 app.UseCors();
 app.UseMiddleware<ErrorHandlingMiddleware>();
 app.MapControllers();
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false
+});
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+});
 app.MapHealthChecks("/health");
 app.Map("/ws/satellites", async (HttpContext context, TelemetryBroadcaster broadcaster) =>
     await WebSocketHandler.HandleWebSocketAsync(context, broadcaster));

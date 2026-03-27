@@ -73,3 +73,12 @@ export interface SatellitePosition {
   velocity: number;
   timestamp: string;
 }
+
+export interface GroundStationDto {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  altitude: number;
+  country: string;
+}

@@ -1,4 +1,4 @@
-import type { SatelliteDto, OrbitDto, TelemetryDto, SatellitePosition, OrbitPathPoint } from '../types';
+import type { SatelliteDto, OrbitDto, TelemetryDto, SatellitePosition, OrbitPathPoint, GroundStationDto } from '../types';
 
 const BASE_URL = '/api';
 
@@ -43,5 +43,11 @@ export async function fetchPosition(satelliteId: string): Promise<SatellitePosit
   const res = await fetch(`${BASE_URL}/satellites/${satelliteId}/position`);
   if (res.status === 404) return null;
   if (!res.ok) throw new Error('Failed to fetch position');
+  return res.json();
+}
+
+export async function fetchGroundStations(): Promise<GroundStationDto[]> {
+  const res = await fetch(`${BASE_URL}/ground-stations`);
+  if (!res.ok) throw new Error('Failed to fetch ground stations');
   return res.json();
 }

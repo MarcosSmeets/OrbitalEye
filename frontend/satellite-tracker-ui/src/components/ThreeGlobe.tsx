@@ -2,7 +2,7 @@ import { useMemo, useRef } from 'react';
 import { Canvas, useLoader } from '@react-three/fiber';
 import { OrbitControls, Stars, Line, Html } from '@react-three/drei';
 import * as THREE from 'three';
-import type { SatelliteDto, OrbitPathPoint } from '../types';
+import type { SatelliteDto, OrbitPathPoint, GroundStationDto } from '../types';
 import { latLonAltToVector3, orbitPathToPoints } from '../utils/coordinates';
 
 interface Props {
@@ -11,6 +11,7 @@ interface Props {
   selectedSatelliteId: string | null;
   onSelectSatellite: (id: string) => void;
   orbitPath: OrbitPathPoint[];
+  groundStations: GroundStationDto[];
 }
 
 function Earth() {
@@ -62,6 +63,20 @@ function SatelliteMarker({ satellite, position, isSelected, onSelect }: Satellit
   );
 }
 
+function GroundStationMarker({ station }: { station: GroundStationDto }) {
+  const pos = latLonAltToVector3(station.latitude, station.longitude, 0);
+
+  return (
+    <mesh position={pos}>
+      <octahedronGeometry args={[0.015, 0]} />
+      <meshBasicMaterial color="#ffa726" />
+      <Html distanceFactor={5} className="ground-station-label">
+        <div>{station.name}</div>
+      </Html>
+    </mesh>
+  );
+}
+
 function OrbitPathLine({ points }: { points: THREE.Vector3[] }) {
   if (points.length < 2) return null;
 
@@ -76,7 +91,7 @@ function OrbitPathLine({ points }: { points: THREE.Vector3[] }) {
   );
 }
 
-function Scene({ satellites, positions, selectedSatelliteId, onSelectSatellite, orbitPath }: Props) {
+function Scene({ satellites, positions, selectedSatelliteId, onSelectSatellite, orbitPath, groundStations }: Props) {
   const orbitPoints = useMemo(() => orbitPathToPoints(orbitPath), [orbitPath]);
 
   return (
@@ -102,6 +117,10 @@ function Scene({ satellites, positions, selectedSatelliteId, onSelectSatellite, 
           />
         );
       })}
+
+      {groundStations.map((gs) => (
+        <GroundStationMarker key={gs.id} station={gs} />
+      ))}
 
       {orbitPoints.length > 0 && <OrbitPathLine points={orbitPoints} />}
 
